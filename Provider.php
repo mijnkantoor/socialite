@@ -1,6 +1,6 @@
 <?php
 
-namespace Mijnkantoor\Socialite;
+namespace MijnKantoor\Socialite;
 
 use Illuminate\Support\Arr;
 use SocialiteProviders\Manager\OAuth2\AbstractProvider;
@@ -30,6 +30,7 @@ class Provider extends AbstractProvider
     {
         return [
             'host',
+            'staging',
             'authorize_uri',
             'token_uri',
             'userinfo_uri',
@@ -51,15 +52,24 @@ class Provider extends AbstractProvider
      */
     protected function getAuthUrl($state)
     {
-        return $this->buildAuthUrlFromBase($this->getLaravelPassportUrl('authorize_uri'), $state);
+        return $this->buildAuthUrlFromBase($this->getMijnKantoorappUrl('authorize_uri'), $state);
     }
 
-    protected function getLaravelPassportUrl($type)
+    /**
+     * @param $type
+     * @return string
+     */
+    protected function getMijnKantoorappUrl($type)
     {
-        return rtrim($this->getConfig('host'), '/') . '/' . ltrim(($this->getConfig($type, Arr::get([
-                'authorize_uri' => 'oauth/authorize',
-                'token_uri' => 'oauth/token',
-                'userinfo_uri' => 'api/user',
+        $host = $this->getConfig('host')
+            ?? (bool)$this->getConfig('staging', false)
+                ? 'https://api.staging.mijnkantoorapp.nl'
+                : 'https://api.mijnkantoorapp.nl';
+
+        return rtrim($host, '/') . '/' . ltrim(($this->getConfig($type, Arr::get([
+                'authorize_uri' => 'v1/oauth/authorize',
+                'token_uri' => 'v1/oauth/token',
+                'userinfo_uri' => 'v1/me',
             ], $type))), '/');
     }
 
@@ -70,7 +80,7 @@ class Provider extends AbstractProvider
      */
     protected function getTokenUrl()
     {
-        return $this->getLaravelPassportUrl('token_uri');
+        return $this->getMijnKantoorappUrl('token_uri');
     }
 
     /**
@@ -82,7 +92,7 @@ class Provider extends AbstractProvider
      */
     protected function getUserByToken($token)
     {
-        $response = $this->getHttpClient()->get($this->getLaravelPassportUrl('userinfo_uri'), [
+        $response = $this->getHttpClient()->get($this->getMijnKantoorappUrl('userinfo_uri'), [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
             ],
@@ -103,15 +113,23 @@ class Provider extends AbstractProvider
         $key = $this->getConfig('userinfo_key', null);
         $data = is_null($key) === true ? $user : Arr::get($user, $key, []);
 
+        //String data key
+        $data = $data['data'] ?? $data;
+
         return (new User())->setRaw($data)->map([
             'id' => $this->getUserData($data, 'id'),
-            'nickname' => $this->getUserData($data, 'nickname'),
-            'name' => $this->getUserData($data, 'name'),
+//            'nickname' => $this->getUserData($data, 'nickname'),
+            'name' => $this->getUserData($data, 'first_name'),
             'email' => $this->getUserData($data, 'email'),
-            'avatar' => $this->getUserData($data, 'avatar'),
+//            'avatar' => $this->getUserData($data, 'avatar'),
         ]);
     }
 
+    /**
+     * @param $user
+     * @param $key
+     * @return array|\ArrayAccess|mixed
+     */
     protected function getUserData($user, $key)
     {
         return Arr::get($user, $this->getConfig('user_' . $key, $key));

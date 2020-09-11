@@ -1,14 +1,14 @@
 <?php
 
 
-namespace Mijnkantoor\Socialite;
+namespace MijnKantoor\Socialite;
 
 use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class MijnKantoorAppExtendSocialite
 {
     /**
-     * Execute the provider.
+     * @param SocialiteWasCalled $socialiteWasCalled
      */
     public function handle(SocialiteWasCalled $socialiteWasCalled)
     {
