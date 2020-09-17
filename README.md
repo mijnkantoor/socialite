@@ -1,7 +1,7 @@
 # MijnKantoor Socialite Provider
 
 ```bash
-composer require mijnkantoorapp/socialite
+composer require mijnkantoor/socialite
 ```
 
 ## Installation & Basic Usage
